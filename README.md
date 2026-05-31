@@ -1,0 +1,1 @@
+# G06_Dividir_e_Conquistar_PA-26.1
