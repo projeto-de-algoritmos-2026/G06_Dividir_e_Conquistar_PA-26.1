@@ -84,6 +84,19 @@
         overflow-y: auto;
       }
 
+      .aside-section {
+        padding: 16px 18px;
+        border-bottom: 1px solid var(--border);
+      }
+      .aside-section-title {
+        font-family: var(--mono);
+        font-size: 10px;
+        color: var(--muted);
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        margin-bottom: 12px;
+      }
+
       /* --- canvas area --- */
       .canvas-wrap {
         flex: 1;
@@ -103,6 +116,7 @@
       @media (max-width: 520px) {
         .layout { flex-direction: column; }
         aside { width: 100%; min-width: unset; border-right: none; border-bottom: 1px solid var(--border); }
+        .stats-grid { grid-template-columns: repeat(4, 1fr); }
       }
     </style>
   </head>
@@ -119,6 +133,113 @@
 
     <div class="layout">
       <aside>
+
+        <div class="aside-section">
+          <div class="aside-section-title">Métricas</div>
+          <div class="stats-grid">
+            <div class="stat">
+              <div class="stat-label">Bolas</div>
+              <div class="stat-value blue" id="s-count">12</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Colisões</div>
+              <div class="stat-value red" id="s-col">0</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Dist. mín</div>
+              <div class="stat-value orange" id="s-dist">—</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Comps/f</div>
+              <div class="stat-value green" id="s-cmp">0</div>
+            </div>
+          </div>
+          <div class="complexity-tag">T(n) = 2T(n/2) + O(n)</div>
+        </div>
+
+        <div class="aside-section">
+          <div class="aside-section-title">Controles</div>
+          <div class="ctrl-group">
+            <div class="ctrl-header">
+              <span class="ctrl-name">Velocidade</span>
+              <span class="ctrl-val" id="v-speed">1.0×</span>
+            </div>
+            <input type="range" id="sl-speed" min="0.1" max="3" step="0.1" value="1" />
+          </div>
+          <div class="ctrl-group">
+            <div class="ctrl-header">
+              <span class="ctrl-name">Raio</span>
+              <span class="ctrl-val" id="v-radius">10px</span>
+            </div>
+            <input type="range" id="sl-radius" min="5" max="22" step="1" value="10" />
+          </div>
+          <div class="ctrl-group">
+            <div class="ctrl-header">
+              <span class="ctrl-name">Amortecimento</span>
+              <span class="ctrl-val" id="v-damp">100%</span>
+            </div>
+            <input type="range" id="sl-damp" min="0.7" max="1" step="0.01" value="1" />
+          </div>
+        </div>
+
+        <div class="aside-section">
+          <div class="aside-section-title">Ações</div>
+          <div class="btn-group">
+            <button class="btn primary" id="btn-play">
+              <span id="play-icon">⏸</span> Pausar
+            </button>
+            <button class="btn" id="btn-add">
+              + Adicionar 5 bolas
+            </button>
+            <button class="btn danger" id="btn-reset">
+              ↺ Reiniciar
+            </button>
+          </div>
+        </div>
+
+        <div class="aside-section">
+          <div class="aside-section-title">Visualização</div>
+          <div class="btn-group">
+            <button class="btn on" id="btn-line">
+              <span class="btn-dot" style="background:var(--accent-orange)"></span>
+              Linha do par
+            </button>
+            <button class="btn" id="btn-divs">
+              <span class="btn-dot" style="background:var(--accent-purple)"></span>
+              Linha de divisão
+            </button>
+            <button class="btn" id="btn-strip">
+              <span class="btn-dot" style="background:rgba(176,126,255,0.4)"></span>
+              Faixa δ
+            </button>
+            <button class="btn" id="btn-trails">
+              <span class="btn-dot" style="background:var(--muted)"></span>
+              Trilhas
+            </button>
+          </div>
+        </div>
+
+        <div class="aside-section">
+          <div class="aside-section-title">Legenda</div>
+          <div class="legend">
+            <div class="leg-row"><div class="leg-dot" style="background:#4fa3e8"></div> Normal</div>
+            <div class="leg-row"><div class="leg-dot" style="background:#f5a623"></div> Par mais próximo</div>
+            <div class="leg-row"><div class="leg-dot" style="background:#e25454"></div> Colisão</div>
+            <div class="leg-row"><div class="leg-dot" style="background:#7ce87c"></div> Gerada por colisão</div>
+            <div class="leg-row">
+              <div style="width:24px;height:2px;background:rgba(245,166,35,0.7);border-radius:1px;flex-shrink:0"></div>
+              Linha par mais próximo
+            </div>
+            <div class="leg-row">
+              <div style="width:24px;height:2px;background:rgba(176,126,255,0.5);border-radius:1px;flex-shrink:0;border-top:1px dashed rgba(176,126,255,0.8)"></div>
+              Linha de divisão
+            </div>
+          </div>
+          <div style="margin-top:10px;font-size:11px;color:var(--muted);line-height:1.6;">
+            Clique no canvas para adicionar uma bola na posição do cursor.
+          </div>
+        </div>
+
       </aside>
 
       <div class="canvas-wrap">
@@ -138,6 +259,269 @@
       }
       resize();
       window.addEventListener('resize', () => { resize(); });
+
+      /* ---- state ---- */
+      let balls = [];
+      let paused = false;
+      let totalCollisions = 0;
+      let comparisonsThisFrame = 0;
+      let showLine   = true;
+      let showDiv    = false;
+      let showStrip  = false;
+      let showTrails = false;
+      let speedMul   = 1;
+      let RADIUS     = 10;
+      let dampening  = 1;
+
+      /* ---- closest pair result ---- */
+      let cpResult = { d: Infinity, p1: null, p2: null };
+      let divX = 0;
+
+      /* ---- trail buffer ---- */
+      const TRAIL_LEN = 18;
+
+      /* ---- helpers ---- */
+      function rnd(a, b) { return a + Math.random() * (b - a); }
+      function dist2(a, b) { const dx = a.x-b.x, dy = a.y-b.y; return dx*dx+dy*dy; }
+      function dist(a, b) { return Math.sqrt(dist2(a, b)); }
+
+      function mkBall(x, y, isNew = false) {
+        const angle = Math.random() * Math.PI * 2;
+        const spd   = rnd(0.9, 2.4);
+        return {
+          x: x ?? rnd(RADIUS + 4, canvas.width  - RADIUS - 4),
+          y: y ?? rnd(RADIUS + 4, canvas.height - RADIUS - 4),
+          vx: Math.cos(angle) * spd,
+          vy: Math.sin(angle) * spd,
+          state: isNew ? 'new' : 'normal',
+          newTimer: isNew ? 70 : 0,
+          colTimer: 0,
+          trail: [],
+          id: Math.random()
+        };
+      }
+
+      function ballColor(b) {
+        if (b.state === 'collide') return '#e25454';
+        if (b.state === 'new')     return '#7ce87c';
+        if (b.state === 'closest') return '#f5a623';
+        return '#4fa3e8';
+      }
+
+      function initBalls(n = 12) {
+        balls = [];
+        for (let i = 0; i < n; i++) balls.push(mkBall());
+        totalCollisions = 0;
+      }
+      initBalls();
+
+      /* ---- closest pair: divide & conquer ---- */
+      function cpBrute(pts) {
+        let best = Infinity, p1 = null, p2 = null;
+        for (let i = 0; i < pts.length; i++)
+          for (let j = i+1; j < pts.length; j++) {
+            comparisonsThisFrame++;
+            const d = dist(pts[i], pts[j]);
+            if (d < best) { best = d; p1 = pts[i]; p2 = pts[j]; }
+          }
+        return { d: best, p1, p2 };
+      }
+
+      function cpDC(pts) {
+        if (pts.length <= 3) return cpBrute(pts);
+        const mid  = Math.floor(pts.length / 2);
+        const midX = pts[mid].x;
+        const L = cpDC(pts.slice(0, mid));
+        const R = cpDC(pts.slice(mid));
+        let best = L.d < R.d ? L : R;
+        const strip = pts.filter(p => Math.abs(p.x - midX) < best.d);
+        strip.sort((a, b) => a.y - b.y);
+        for (let i = 0; i < strip.length; i++)
+          for (let j = i+1; j < strip.length && (strip[j].y - strip[i].y) < best.d; j++) {
+            comparisonsThisFrame++;
+            const d = dist(strip[i], strip[j]);
+            if (d < best.d) best = { d, p1: strip[i], p2: strip[j] };
+          }
+        return best;
+      }
+
+      function runClosestPair() {
+        comparisonsThisFrame = 0;
+        if (balls.length < 2) { cpResult = { d: Infinity, p1: null, p2: null }; return; }
+        const sorted = [...balls].sort((a, b) => a.x - b.x);
+        divX = sorted[Math.floor(sorted.length / 2)].x;
+        cpResult = cpDC(sorted);
+      }
+
+      /* ---- physics ---- */
+      function resolveCollision(a, b) {
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const d  = Math.sqrt(dx*dx + dy*dy) || 0.001;
+        const nx = dx/d, ny = dy/d;
+        const relV = (a.vx - b.vx)*nx + (a.vy - b.vy)*ny;
+        if (relV <= 0) return false;
+        a.vx = (a.vx - relV*nx) * dampening;
+        a.vy = (a.vy - relV*ny) * dampening;
+        b.vx = (b.vx + relV*nx) * dampening;
+        b.vy = (b.vy + relV*ny) * dampening;
+        const overlap = (RADIUS*2 - d) / 2 + 0.5;
+        a.x -= nx*overlap; a.y -= ny*overlap;
+        b.x += nx*overlap; b.y += ny*overlap;
+        return true;
+      }
+
+      /* ---- update ---- */
+      function update() {
+        const born = [];
+
+        for (const b of balls) {
+          /* trails */
+          if (showTrails) {
+            b.trail.push({ x: b.x, y: b.y });
+            if (b.trail.length > TRAIL_LEN) b.trail.shift();
+          } else {
+            b.trail = [];
+          }
+
+          /* move */
+          b.x += b.vx * speedMul;
+          b.y += b.vy * speedMul;
+
+          /* walls */
+          if (b.x - RADIUS < 0)              { b.x = RADIUS;                b.vx =  Math.abs(b.vx); }
+          if (b.x + RADIUS > canvas.width)   { b.x = canvas.width - RADIUS; b.vx = -Math.abs(b.vx); }
+          if (b.y - RADIUS < 0)              { b.y = RADIUS;                b.vy =  Math.abs(b.vy); }
+          if (b.y + RADIUS > canvas.height)  { b.y = canvas.height - RADIUS;b.vy = -Math.abs(b.vy); }
+
+          /* timers */
+          if (b.newTimer > 0) { b.newTimer--; if (!b.newTimer) b.state = 'normal'; }
+          if (b.colTimer > 0) { b.colTimer--; if (!b.colTimer && b.state === 'collide') b.state = 'normal'; }
+        }
+
+        /* ball–ball collisions */
+        for (let i = 0; i < balls.length; i++)
+          for (let j = i+1; j < balls.length; j++) {
+            if (dist(balls[i], balls[j]) < RADIUS * 2) {
+              const hit = resolveCollision(balls[i], balls[j]);
+              if (hit) {
+                totalCollisions++;
+                balls[i].state = 'collide'; balls[i].colTimer = 20;
+                balls[j].state = 'collide'; balls[j].colTimer = 20;
+                if (balls.length < 60) {
+                  const mx = (balls[i].x + balls[j].x) / 2;
+                  const my = (balls[i].y + balls[j].y) / 2;
+                  born.push(mkBall(
+                    Math.max(RADIUS+4, Math.min(canvas.width -RADIUS-4, mx + rnd(-24,24))),
+                    Math.max(RADIUS+4, Math.min(canvas.height-RADIUS-4, my + rnd(-24,24))),
+                    true
+                  ));
+                }
+              }
+            }
+          }
+
+        if (born.length) balls.push(...born);
+
+        /* closest pair */
+        runClosestPair();
+
+        /* mark closest */
+        for (const b of balls) {
+          if (b.state === 'collide' || b.state === 'new') continue;
+          if (b === cpResult.p1 || b === cpResult.p2) b.state = 'closest';
+          else if (b.state === 'closest') b.state = 'normal';
+        }
+      }
+
+      /* ---- draw ---- */
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+
+        /* balls */
+        for (const b of balls) {
+          const col = ballColor(b);
+
+
+          /* main circle */
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(b.x, b.y, RADIUS, 0, Math.PI * 2);
+          ctx.fillStyle = col;
+          ctx.globalAlpha = 0.88;
+          ctx.fill();
+        }
+      }
+
+      /* ---- stats ---- */
+      function updateStats() {
+        document.getElementById('s-count').textContent = balls.length;
+        document.getElementById('s-col').textContent   = totalCollisions;
+        document.getElementById('s-dist').textContent  = cpResult.d < Infinity ? cpResult.d.toFixed(1) : '—';
+        document.getElementById('s-cmp').textContent   = comparisonsThisFrame;
+      }
+
+      /* ---- loop ---- */
+      function loop() {
+        if (!paused) { update(); draw(); updateStats(); }
+        requestAnimationFrame(loop);
+      }
+      requestAnimationFrame(loop);
+
+      /* ---- controls ---- */
+      document.getElementById('btn-play').onclick = function() {
+        paused = !paused;
+        document.getElementById('play-icon').textContent = paused ? '▶' : '⏸';
+        this.textContent = paused ? '▶  Retomar' : '⏸ Pausar';
+      };
+      document.getElementById('btn-add').onclick = () => {
+        for (let i = 0; i < 5; i++) balls.push(mkBall());
+      };
+      document.getElementById('btn-reset').onclick = () => initBalls(12);
+
+      function toggle(btnId, getter, setter) {
+        document.getElementById(btnId).onclick = function() {
+          setter(!getter());
+          this.classList.toggle('on', !getter() ? false : true);
+          /* re-read after setter */
+          this.classList.toggle('on', getter());
+        };
+      }
+      toggle('btn-line',   () => showLine,   v => { showLine   = v; });
+      toggle('btn-divs',   () => showDiv,    v => { showDiv    = v; });
+      toggle('btn-strip',  () => showStrip,  v => { showStrip  = v; });
+      toggle('btn-trails', () => showTrails, v => { showTrails = v; });
+
+      document.getElementById('sl-speed').oninput = function() {
+        speedMul = parseFloat(this.value);
+        document.getElementById('v-speed').textContent = speedMul.toFixed(1) + '×';
+      };
+      document.getElementById('sl-radius').oninput = function() {
+        RADIUS = parseInt(this.value);
+        document.getElementById('v-radius').textContent = RADIUS + 'px';
+      };
+      document.getElementById('sl-damp').oninput = function() {
+        dampening = parseFloat(this.value);
+        document.getElementById('v-damp').textContent = Math.round(dampening * 100) + '%';
+      };
+
+      /* toast helper */
+      let toastTimer;
+      function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => t.classList.remove('show'), 1600);
+      }
+
+      /* click to add ball */
+      canvas.addEventListener('click', e => {
+        const r = canvas.getBoundingClientRect();
+        const x = e.clientX - r.left, y = e.clientY - r.top;
+        balls.push(mkBall(x, y));
+        showToast('Bola adicionada em (' + Math.round(x) + ', ' + Math.round(y) + ')');
+      });
     </script>
   </body>
 </html>
