@@ -34,10 +34,110 @@
         flex-direction: column;
         overflow-x: hidden;
       }
+
+      /* --- header --- */
+      header {
+        padding: 18px 28px 14px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      .header-title {
+        font-family: var(--mono);
+        font-size: 13px;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+        text-transform: uppercase;
+      }
+      .header-title span {
+        color: var(--accent-orange);
+      }
+      .header-badge {
+        font-family: var(--mono);
+        font-size: 11px;
+        padding: 3px 10px;
+        border: 1px solid var(--border2);
+        border-radius: 99px;
+        color: var(--muted);
+        letter-spacing: 0.06em;
+      }
+
+      /* --- main layout --- */
+      .layout {
+        display: flex;
+        flex: 1;
+        gap: 0;
+        overflow: hidden;
+      }
+
+      /* --- sidebar --- */
+      aside {
+        width: 240px;
+        min-width: 240px;
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        overflow-y: auto;
+      }
+
+      /* --- canvas area --- */
+      .canvas-wrap {
+        flex: 1;
+        position: relative;
+        overflow: hidden;
+      }
+      #sim {
+        display: block;
+        width: 100%;
+        height: 100%;
+        cursor: crosshair;
+      }
+
+      @media (max-width: 680px) {
+        aside { width: 200px; min-width: 200px; }
+      }
+      @media (max-width: 520px) {
+        .layout { flex-direction: column; }
+        aside { width: 100%; min-width: unset; border-right: none; border-bottom: 1px solid var(--border); }
+      }
     </style>
   </head>
 
   <body>
 
+    <header>
+      <div class="header-title">Par Mais Próximo — <span>Dividir &amp; Conquistar</span></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <div class="header-badge">O(n log n)</div>
+        <div class="header-badge">Projeto PAA</div>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside>
+      </aside>
+
+      <div class="canvas-wrap">
+        <canvas id="sim"></canvas>
+        <div id="toast">Bola adicionada!</div>
+      </div>
+    </div>
+
+    <script>
+      const canvas = document.getElementById('sim');
+      const ctx = canvas.getContext('2d');
+      const wrap = canvas.parentElement;
+
+      function resize() {
+        canvas.width  = wrap.clientWidth;
+        canvas.height = wrap.clientHeight || window.innerHeight - 60;
+      }
+      resize();
+      window.addEventListener('resize', () => { resize(); });
+    </script>
   </body>
 </html>
