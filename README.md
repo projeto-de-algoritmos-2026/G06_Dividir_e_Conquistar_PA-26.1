@@ -81,3 +81,10 @@ O projeto é um único arquivo HTML autocontido. Não requer instalação, servi
 * **Conquista (caso base):** Para grupos de até 3 pontos, o par mais próximo é encontrado por força bruta — O(n²) com n constante, portanto O(1).
 * **Recombinação:** Após resolver cada metade, o algoritmo encontra o melhor δ (mínimo entre os dois lados) e inspeciona apenas os pontos dentro da faixa vertical de largura 2δ ao redor da linha de divisão. A prova geométrica garante que cada ponto verifica no máximo 7 vizinhos, mantendo a etapa de fusão em O(n).
 * **Recorrência:** `T(n) = 2T(n/2) + O(n)` → pelo Teorema Mestre, caso 2: **O(n log n)**.
+
+## Vídeo
+
+[![embed vídeo](https://img.youtube.com/vi/RRPOxASy3oI/0.jpg)](https://www.youtube.com/watch?v=RRPOxASy3oI)
+
+
+[https://www.youtube.com/watch?v=36Esm9j4PCE](https://youtu.be/RRPOxASy3oI)
