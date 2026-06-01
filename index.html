@@ -253,9 +253,19 @@
 
     <header>
       <div class="header-title">Par Mais Próximo — <span>Dividir &amp; Conquistar</span></div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-        <div class="header-badge">O(n log n)</div>
-        <div class="header-badge">Projeto PAA</div>
+      <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)"><div style="width:10px;height:10px;border-radius:50%;background:#4fa3e8;flex-shrink:0"></div>Normal</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)"><div style="width:10px;height:10px;border-radius:50%;background:#f5a623;flex-shrink:0"></div>Par mais próximo</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)"><div style="width:10px;height:10px;border-radius:50%;background:#e25454;flex-shrink:0"></div>Colisão</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)"><div style="width:10px;height:10px;border-radius:50%;background:#7ce87c;flex-shrink:0"></div>Gerada</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)"><div style="width:24px;height:2px;background:rgba(245,166,35,0.7);flex-shrink:0"></div>Linha par</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)"><div style="width:24px;height:0;border-top:2px dashed rgba(176,126,255,0.8);flex-shrink:0"></div>Divisão</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <div class="header-badge">O(n log n)</div>
+          <div class="header-badge">Projeto PAA</div>
+        </div>
       </div>
     </header>
 
@@ -347,27 +357,6 @@
           </div>
         </div>
 
-        <div class="aside-section">
-          <div class="aside-section-title">Legenda</div>
-          <div class="legend">
-            <div class="leg-row"><div class="leg-dot" style="background:#4fa3e8"></div> Normal</div>
-            <div class="leg-row"><div class="leg-dot" style="background:#f5a623"></div> Par mais próximo</div>
-            <div class="leg-row"><div class="leg-dot" style="background:#e25454"></div> Colisão</div>
-            <div class="leg-row"><div class="leg-dot" style="background:#7ce87c"></div> Gerada por colisão</div>
-            <div class="leg-row">
-              <div style="width:24px;height:2px;background:rgba(245,166,35,0.7);border-radius:1px;flex-shrink:0"></div>
-              Linha par mais próximo
-            </div>
-            <div class="leg-row">
-              <div style="width:24px;height:2px;background:rgba(176,126,255,0.5);border-radius:1px;flex-shrink:0;border-top:1px dashed rgba(176,126,255,0.8)"></div>
-              Linha de divisão
-            </div>
-          </div>
-          <div style="margin-top:10px;font-size:11px;color:var(--muted);line-height:1.6;">
-            Clique no canvas para adicionar uma bola na posição do cursor.
-          </div>
-        </div>
-
       </aside>
 
       <div class="canvas-wrap">
@@ -424,6 +413,7 @@
           state: isNew ? 'new' : 'normal',
           newTimer: isNew ? 70 : 0,
           colTimer: 0,
+          cooldown: isNew ? 40 : 0,
           trail: [],
           id: Math.random()
         };
@@ -522,19 +512,22 @@
           if (b.y + RADIUS > canvas.height)  { b.y = canvas.height - RADIUS;b.vy = -Math.abs(b.vy); }
 
           /* timers */
-          if (b.newTimer > 0) { b.newTimer--; if (!b.newTimer) b.state = 'normal'; }
-          if (b.colTimer > 0) { b.colTimer--; if (!b.colTimer && b.state === 'collide') b.state = 'normal'; }
+          if (b.newTimer  > 0) { b.newTimer--;  if (!b.newTimer  && b.state === 'new')     b.state = 'normal'; }
+          if (b.colTimer  > 0) { b.colTimer--;  if (!b.colTimer  && b.state === 'collide') b.state = 'normal'; }
+          if (b.cooldown  > 0)   b.cooldown--;
         }
 
         /* ball–ball collisions */
         for (let i = 0; i < balls.length; i++)
           for (let j = i+1; j < balls.length; j++) {
+            if (balls[i].cooldown > 0 || balls[j].cooldown > 0) continue;
             if (dist(balls[i], balls[j]) < RADIUS * 2) {
               const hit = resolveCollision(balls[i], balls[j]);
               if (hit) {
                 totalCollisions++;
-                balls[i].state = 'collide'; balls[i].colTimer = 20;
-                balls[j].state = 'collide'; balls[j].colTimer = 20;
+                const COOLDOWN = 40;
+                balls[i].state = 'collide'; balls[i].colTimer = 20; balls[i].cooldown = COOLDOWN;
+                balls[j].state = 'collide'; balls[j].colTimer = 20; balls[j].cooldown = COOLDOWN;
                 if (balls.length < 60) {
                   const mx = (balls[i].x + balls[j].x) / 2;
                   const my = (balls[i].y + balls[j].y) / 2;
