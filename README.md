@@ -1,6 +1,6 @@
 # Visualizador de Par de Pontos Mais Próximos
 
-**Número da Lista**: XX <br>
+**Número da Lista**: 06 <br>
 **Conteúdo da Disciplina**: Dividir e Conquistar
 
 ## Alunos
